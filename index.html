@@ -15,18 +15,29 @@
             font-family: 'Poppins', sans-serif;
         }
         textarea, select, input {
-            width: 80%;
+            width: 40%;
             margin: 10px 0;
             padding: 10px;
             display: block;
         }
         button {
             padding: 10px 20px;
-            background: blue;
-            color: white;
             border: none;
             cursor: pointer;
             margin-top: 10px;
+        }
+        .add-option {
+            background: #00153E;
+            color: white;
+            display: block;
+        }
+        .check-bias {
+            background: #00153E;
+            color: white;
+        }
+        .remove-option {
+            background: #6C757D;
+            color: white;
         }
         .feedback {
             margin-top: 20px;
@@ -38,10 +49,6 @@
             align-items: center;
             gap: 10px;
             margin-top: 10px;
-        }
-        .add-option {
-            margin-top: 10px;
-            display: block;
         }
     </style>
 </head>
@@ -58,7 +65,7 @@
     </select>
     
     <div id="answerOptions"></div>
-    <button onclick="checkBias()">Check for Bias</button>
+    <button class="check-bias" onclick="checkBias()">Check for Bias</button>
     
     <div id="feedback" class="feedback"></div>
     
@@ -70,24 +77,25 @@
 
             if (type === "multiple choice" || type === "rating scale") {
                 let addOptionButton = document.createElement("button");
-                addOptionButton.textContent = "➕ Add Option";
+                addOptionButton.textContent = "➕ Add Answer Choice";
                 addOptionButton.className = "add-option";
                 addOptionButton.onclick = function() {
                     let optionContainer = document.createElement("div");
                     optionContainer.className = "option-container";
                     
-                    let input = document.createElement("input");
-                    input.type = "text";
-                    input.placeholder = "Enter answer option...";
-                    
                     let removeButton = document.createElement("button");
                     removeButton.textContent = "➖";
+                    removeButton.className = "remove-option";
                     removeButton.onclick = function() {
                         optionContainer.remove();
                     };
                     
-                    optionContainer.appendChild(input);
+                    let input = document.createElement("input");
+                    input.type = "text";
+                    input.placeholder = "Enter answer option...";
+                    
                     optionContainer.appendChild(removeButton);
+                    optionContainer.appendChild(input);
                     answerOptionsDiv.appendChild(optionContainer);
                 };
                 answerOptionsDiv.appendChild(addOptionButton);
@@ -98,7 +106,7 @@
             const input = document.getElementById("surveyInput").value.toLowerCase();
             let biases = [];
 
-            if (/how good|how great|don't you agree|isn't it true/i.test(input)) {
+            if (/how good|how great|don't you agree|isn't it true|efficient|effective|great|satisfactory|good service|how much do you enjoy|why do you like/i.test(input)) {
                 biases.push("🚨 Leading Question: Avoid suggesting an answer.");
             }
             if (/and.*or/i.test(input)) {
@@ -110,6 +118,23 @@
             if (/CRM|UX|Efficacy/i.test(input)) {
                 biases.push("⚠️ Jargon Detected: Use simple and clear language.");
             }
+            
+            // Check answer choices for bias
+            const answerOptions = document.querySelectorAll("#answerOptions input");
+            answerOptions.forEach(option => {
+                if (/excellent|perfect|outstanding|terrible|disastrous|horrible/i.test(option.value)) {
+                    biases.push("⚠️ Unbalanced Answer Choices: Ensure an equal number of positive and negative options.");
+                }
+                if (/very dissatisfied|dissatisfied|satisfied|extremely satisfied/i.test(option.value) && !option.value.includes("very satisfied")) {
+                    biases.push("⚠️ Non-Parallel Scales: Ensure all positive and negative responses are mirrored.");
+                }
+                if (/good|fair|excellent/i.test(option.value)) {
+                    biases.push("⚠️ Vague Answer Choices: Use precise wording.");
+                }
+                if (/yes|no/.test(option.value) && !/maybe|not applicable/.test(option.value)) {
+                    biases.push("⚠️ Limited Answer Options: Ensure all reasonable responses are available.");
+                }
+            });
             
             document.getElementById("feedback").innerHTML = biases.length > 0 ? biases.join("<br>") : "✅ No major bias detected!";
         }
