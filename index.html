@@ -58,9 +58,9 @@
     
     <label for="answerType">Select Answer Type:</label>
     <select id="answerType">
+        <option value="NPS">Net Promoter Score (NPS)</option>
         <option value="multiple choice">Multiple Choice</option>
         <option value="rating scale">Rating Scale</option>
-        <option value="NPS">Net Promoter Score (NPS)</option>
         <option value="open-ended">Open-Ended</option>
     </select>
     
@@ -106,10 +106,10 @@
             const input = document.getElementById("surveyInput").value.toLowerCase();
             let biases = [];
 
-            if (/how good|how great|don't you agree|isn't it true|efficient|effective|great|satisfactory|good service|how much do you enjoy|why do you like/i.test(input)) {
+            if (/good|agree|disagree|isn't it true|efficient|effective|great|satisfactory|satisfied|amazing|perfect|enjoy|exceptional|beneficial|impressive|impressed|love|why do you like/i.test(input)) {
                 biases.push("🚨 Leading Question: Avoid suggesting an answer.");
             }
-            if (/and.*or/i.test(input)) {
+            if (/and.*or|both|together|at the same time|combined|simultaneously/i.test(input)) {
                 biases.push("⚠️ Double-Barreled Question: Keep it focused on one topic.");
             }
             if (/must|required/i.test(input)) {
@@ -117,6 +117,9 @@
             }
             if (/CRM|UX|Efficacy/i.test(input)) {
                 biases.push("⚠️ Jargon Detected: Use simple and clear language.");
+            }
+            if (/always|never|every/i.test(input)) {
+                biases.push("⚠️ Absolute Wording Detected: Consider using more flexible language to capture a wider range of experiences.");
             }
             
             // Check answer choices for bias
