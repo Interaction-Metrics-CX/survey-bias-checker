@@ -4,13 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Survey Bias Checker</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        textarea, select, input { width: 80%; margin: 10px 0; padding: 10px; }
+        button { padding: 10px 20px; background: blue; color: white; border: none; cursor: pointer; }
+        .feedback { margin-top: 20px; padding: 10px; background: #f3f3f3; }
+    </style>
 </head>
 <body>
     <h1>Survey Bias Checker</h1>
     <textarea id="surveyInput" placeholder="Paste your survey question..."></textarea>
+    
+    <label for="answerType">Select Answer Type:</label>
+    <select id="answerType">
+        <option value="multiple choice">Multiple Choice</option>
+        <option value="rating scale">Rating Scale</option>
+        <option value="NPS">Net Promoter Score (NPS)</option>
+        <option value="open-ended">Open-Ended</option>
+    </select>
+    
+    <div id="answerOptions"></div>
     <button onclick="checkBias()">Check for Bias</button>
-    <p id="result"></p>
-    <script src="app.js"></script>
+    
+    <div id="feedback" class="feedback"></div>
+    
+    <script>
+        document.getElementById("answerType").addEventListener("change", function() {
+            const type = this.value;
+            const answerOptionsDiv = document.getElementById("answerOptions");
+            answerOptionsDiv.innerHTML = "";
+
+            if (type === "multiple choice" || type === "rating scale") {
+                let addOptionButton = document.createElement("button");
+                addOptionButton.textContent = "Add Option";
+                addOptionButton.onclick = function() {
+                    let input = document.createElement("input");
+                    input.type = "text";
+                    input.placeholder = "Enter answer option...";
+                    answerOptionsDiv.appendChild(input);
+                };
+                answerOptionsDiv.appendChild(addOptionButton);
+            }
+        });
+
+        function checkBias() {
+            const input = document.getElementById("surveyInput").value.toLowerCase();
+            let biases = [];
+
+            if (/how good|how great|don't you agree|isn't it true/i.test(input)) {
+                biases.push("🚨 Leading Question: Avoid suggesting an answer.");
+            }
+            if (/and.*or/i.test(input)) {
+                biases.push("⚠️ Double-Barreled Question: Keep it focused on one topic.");
+            }
+            if (/must|required/i.test(input)) {
+                biases.push("⚠️ Forced Question: Ensure respondents have a way to opt out.");
+            }
+            if (/CRM|UX|Efficacy/i.test(input)) {
+                biases.push("⚠️ Jargon Detected: Use simple and clear language.");
+            }
+            
+            document.getElementById("feedback").innerHTML = biases.length > 0 ? biases.join("<br>") : "✅ No major bias detected!";
+        }
+    </script>
 </body>
 </html>
