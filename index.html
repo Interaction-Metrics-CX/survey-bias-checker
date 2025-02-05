@@ -3,49 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survey Bias Checker</title>
+    <title>Interaction Metrics Survey Bias Checker</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Nunito+Sans&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Nunito Sans', sans-serif;
             text-align: left;
-            padding: 40px;
+            padding: 20px;
             background-color: #f9f9f9;
         }
         .card {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            width: 50%;
         }
         h1 {
             font-family: 'Poppins', sans-serif;
+            font-size: 20px;
         }
         label {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
         }
         textarea, select, input {
             width: 100%;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
             border: 1px solid #ccc;
             outline: none;
             transition: all 0.3s;
         }
         textarea:focus, select:focus, input:focus {
-            box-shadow: 0px 0px 8px rgba(0, 21, 62, 0.4);
+            box-shadow: 0px 0px 5px rgba(0, 21, 62, 0.4);
             border-color: #00153E;
         }
         .button {
             width: 100%;
-            padding: 12px;
+            padding: 8px;
             border: none;
-            border-radius: 5px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             color: white;
             background: linear-gradient(90deg, #00153E, #003A70);
             transition: background 0.3s;
@@ -55,24 +57,25 @@
             background: linear-gradient(90deg, #003A70, #00153E);
         }
         .remove-option {
-            background: #6C757D;
-            color: white;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
+            background: white;
+            color: black;
+            padding: 5px 8px;
+            border: 1px solid black;
+            border-radius: 3px;
             cursor: pointer;
         }
         .option-container {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 5px;
+            margin-top: 5px;
         }
         .feedback {
-            margin-top: 20px;
-            padding: 10px;
+            display: none;
+            margin-top: 10px;
+            padding: 5px;
             background: #f3f3f3;
-            border-radius: 5px;
+            border-radius: 3px;
         }
         .highlight {
             color: red;
@@ -82,14 +85,14 @@
             animation: fadeIn 0.3s ease-in;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(-5px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Survey Bias Checker</h1>
+        <h1>Interaction Metrics Survey Bias Checker</h1>
         <label for="surveyInput">Survey Question:</label>
         <textarea id="surveyInput" placeholder="Paste your survey question..."></textarea>
     </div>
@@ -97,16 +100,17 @@
     <div class="card">
         <label for="answerType">Select Answer Type:</label>
         <select id="answerType">
+            <option value="NPS" selected>Net Promoter Score (NPS)</option>
             <option value="multiple choice">Multiple Choice</option>
-            <option value="rating scale">Rating Scale</option>
-            <option value="NPS">Net Promoter Score (NPS)</option>
+            <option value="likert scale">Likert Scale</option>
+            <option value="numerical rating scale">Numerical Rating Scale</option>
             <option value="open-ended">Open-Ended</option>
         </select>
     </div>
     
-    <div class="card">
+    <div class="card" id="answerSection" style="display: none;">
         <div id="answerOptions"></div>
-        <button class="button" onclick="addAnswerChoice()">➕ Add Answer Choice</button>
+        <button class="button" onclick="addAnswerChoice()">Add Answer Choice</button>
     </div>
     
     <div class="card">
@@ -117,15 +121,18 @@
     
     <script>
         document.getElementById("answerType").addEventListener("change", function() {
+            const type = this.value;
+            const answerSection = document.getElementById("answerSection");
+            answerSection.style.display = (type === "multiple choice" || type === "likert scale") ? "block" : "none";
             document.getElementById("answerOptions").innerHTML = "";
         });
 
-        function addAnswerChoice() {
+       function addAnswerChoice() {
             let optionContainer = document.createElement("div");
             optionContainer.className = "option-container fade-in";
             
             let removeButton = document.createElement("button");
-            removeButton.textContent = "➖";
+            removeButton.textContent = "-";
             removeButton.className = "remove-option";
             removeButton.onclick = function() {
                 optionContainer.remove();
@@ -139,6 +146,7 @@
             optionContainer.appendChild(input);
             document.getElementById("answerOptions").appendChild(optionContainer);
         }
+
 
         function checkBias() {
              const input = document.getElementById("surveyInput").value.toLowerCase();
@@ -191,9 +199,12 @@
             if (hasLimitedOption && !answerBias) {
                 answerBias = "⚠️ Limited Answer Options: Ensure 'N/A, None, or Not Applicable' is included.";
             }
-            
-          document.getElementById("questionFeedback").innerHTML = questionBias || "✅ No major bias detected in the question!";
-            document.getElementById("answerFeedback").innerHTML = answerBias || "✅ No major bias detected in the answer choices!";
+
+            document.querySelectorAll(".feedback").forEach(el => el.style.display = "none");
+            document.getElementById("questionFeedback").innerHTML = questionBias || "✅ No bias detected in the question wprding!";
+            document.getElementById("answerFeedback").innerHTML = answerBias || "✅ No  bias detected in the answer choices!";
+            document.getElementById("questionFeedback").style.display = "block";
+            document.getElementById("answerFeedback").style.display = "block";
         }
     </script>
 </body>
