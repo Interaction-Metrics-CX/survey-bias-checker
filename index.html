@@ -4,11 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Survey Bias Checker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Nunito+Sans&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        textarea, select, input { width: 80%; margin: 10px 0; padding: 10px; }
-        button { padding: 10px 20px; background: blue; color: white; border: none; cursor: pointer; }
-        .feedback { margin-top: 20px; padding: 10px; background: #f3f3f3; }
+        body {
+            font-family: 'Nunito Sans', sans-serif;
+            text-align: left;
+            padding: 20px;
+        }
+        h1 {
+            font-family: 'Poppins', sans-serif;
+        }
+        textarea, select, input {
+            width: 80%;
+            margin: 10px 0;
+            padding: 10px;
+            display: block;
+        }
+        button {
+            padding: 10px 20px;
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .feedback {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f3f3f3;
+        }
+        .option-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .add-option {
+            margin-top: 10px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -36,12 +70,25 @@
 
             if (type === "multiple choice" || type === "rating scale") {
                 let addOptionButton = document.createElement("button");
-                addOptionButton.textContent = "Add Option";
+                addOptionButton.textContent = "➕ Add Option";
+                addOptionButton.className = "add-option";
                 addOptionButton.onclick = function() {
+                    let optionContainer = document.createElement("div");
+                    optionContainer.className = "option-container";
+                    
                     let input = document.createElement("input");
                     input.type = "text";
                     input.placeholder = "Enter answer option...";
-                    answerOptionsDiv.appendChild(input);
+                    
+                    let removeButton = document.createElement("button");
+                    removeButton.textContent = "➖";
+                    removeButton.onclick = function() {
+                        optionContainer.remove();
+                    };
+                    
+                    optionContainer.appendChild(input);
+                    optionContainer.appendChild(removeButton);
+                    answerOptionsDiv.appendChild(optionContainer);
                 };
                 answerOptionsDiv.appendChild(addOptionButton);
             }
