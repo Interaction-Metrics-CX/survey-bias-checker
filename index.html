@@ -107,39 +107,47 @@
             let biases = [];
 
             if (/good|agree|disagree|isn't it true|efficient|effective|great|satisfactory|satisfied|amazing|perfect|enjoy|exceptional|beneficial|impressive|impressed|love|why do you like/i.test(input)) {
-                biases.push("🚨 Leading Question: Avoid suggesting an answer.");
+                biases.add("🚨 Leading Question: Avoid suggesting an answer.");
             }
             if (/and.*or|both|together|at the same time|combined|simultaneously/i.test(input)) {
-                biases.push("⚠️ Double-Barreled Question: Keep it focused on one topic.");
+                biases.add("🚨 Double-Barreled Question: Keep it focused on one topic.");
             }
             if (/must|required/i.test(input)) {
-                biases.push("⚠️ Forced Question: Ensure respondents have a way to opt out.");
+                biases.add("🚨 Forced Question: Ensure respondents have a way to opt out.");
             }
             if (/CRM|UX|Efficacy/i.test(input)) {
-                biases.push("⚠️ Jargon Detected: Use simple and clear language.");
+                biases.add("🚨 Jargon Detected: Use simple and clear language.");
             }
             if (/always|never|every/i.test(input)) {
-                biases.push("⚠️ Absolute Wording Detected: Consider using more flexible language to capture a wider range of experiences.");
+                biases.add("🚨 Absolute Wording Detected: Consider using more flexible language to capture a wider range of experiences.");
             }
             
-            // Check answer choices for bias
+            // Check answer choices for bias (only one warning per category)
+           let answerBias = "";
             const answerOptions = document.querySelectorAll("#answerOptions input");
-            answerOptions.forEach(option => {
-                if (/excellent|perfect|outstanding|terrible|disastrous|horrible/i.test(option.value)) {
-                    biases.push("⚠️ Unbalanced Answer Choices: Ensure an equal number of positive and negative options.");
+            let hasLimitedOption = true;
+            
+             answerOptions.forEach(option => {
+                if (/excellent|perfect|outstanding|terrible|disastrous|horrible/i.test(option.value) && !answerBias) {
+                    answerBias = "⚠️ Unbalanced Answer Choices: Ensure an equal number of positive and negative options.";
                 }
-                if (/very dissatisfied|dissatisfied|satisfied|extremely satisfied/i.test(option.value) && !option.value.includes("very satisfied")) {
-                    biases.push("⚠️ Non-Parallel Scales: Ensure all positive and negative responses are mirrored.");
+                if (/very dissatisfied|dissatisfied|satisfied|extremely satisfied/i.test(option.value) && !answerBias) {
+                    answerBias = "⚠️ Non-Parallel Scales: Ensure all positive and negative responses are mirrored.";
                 }
-                if (/good|fair|excellent/i.test(option.value)) {
-                    biases.push("⚠️ Vague Answer Choices: Use precise wording.");
+                if (/good|fair|excellent/i.test(option.value) && !answerBias) {
+                    answerBias = "⚠️ Vague Answer Choices: Use precise wording.";
                 }
-                if (/yes|no/.test(option.value) && !/maybe|not applicable/.test(option.value)) {
-                    biases.push("⚠️ Limited Answer Options: Ensure all reasonable responses are available.");
+                if (/N\/A|NA|None|Not Applicable/i.test(option.value)) {
+                    hasLimitedOption = false;
                 }
             });
             
-            document.getElementById("feedback").innerHTML = biases.length > 0 ? biases.join("<br>") : "✅ No major bias detected!";
+            if (hasLimitedOption) {
+                answerBias = "⚠️ Limited Answer Options: Ensure 'N/A, None, or Not Applicable' is included.";
+            }
+            
+            let feedbackText = [...biases].concat(answerBias ? [answerBias] : []).join("<br>");
+            document.getElementById("feedback").innerHTML = feedbackText || "✅ No major bias detected!";
         }
     </script>
 </body>
