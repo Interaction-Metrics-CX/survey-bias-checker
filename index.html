@@ -202,16 +202,17 @@
             }
 
             document.querySelectorAll(".feedback").forEach(el => el.style.display = "none");
-            document.getElementById("questionFeedback").innerText = "✅ No bias detected in the question wording!";
+            document.getElementById("questionFeedback").innerHTML = questionBias || "✅ No bias detected in the question wording!";
             document.getElementById("questionFeedback").style.display = "block";
-            
+
             const answerType = document.getElementById("answerType").value;
             const answerOptions = document.querySelectorAll("#answerOptions input");
             
             if ((answerType === "multiple choice" || answerType === "likert scale") && answerOptions.length > 0) {
-                document.getElementById("answerFeedback").innerText = "✅ No bias detected in the answer choices!";
-                document.getElementById("answerFeedback").style.display = "block";
-            }
+            document.getElementById("answerFeedback").innerHTML = answerBias || "✅ No  bias detected in the answer choices!";
+            document.getElementById("answerFeedback").style.display = "block";
+        }
+
 </script>    
 </body>
 </html>
