@@ -175,6 +175,24 @@ function checkBias() {
         highlightedText = highlightWords(input, /good|agree|disagree|isn't it true|efficient|effective|great|satisfactory|satisfied|amazing|perfect|enjoy|exceptional|beneficial|impressive|impressed|love|why do you like/i);
     }
 
+    let highlightedText = input;
+    if (/and.*or|both|together|at the same time|combined|simultaneously/i.test(input)) {
+        questionBias = "🚨 Double-Barreled Question: Keep it focused on one topic.";
+        highlightedText = highlightWords(input, /and.*or|both|together|at the same time|combined|simultaneously/i);
+    }
+
+    let highlightedText = input;
+    if (/must|required/i.test(input)) {
+        questionBias = "🚨 Forced Question: Ensure respondents have a way to opt out.";
+        highlightedText = highlightWords(input, /must|required/i);
+    }
+
+    let highlightedText = input;
+    if (/CRM|UX|Efficacy/i.test(input)) {
+        questionBias = "🚨 Jargon Detected: Use simple and clear language.";
+        highlightedText = highlightWords(input, /CRM|UX|Efficacy/i);
+    }
+
     // Display the highlighted text separately
     document.getElementById("surveyInputDisplay").innerHTML = highlightedText;
         document.getElementById("surveyInputDisplay").style.display = "block";
