@@ -180,17 +180,25 @@ function checkBias() {
     // 🚨 FIXED: Combined all bias checks into one function
     const biasWords = {
         "🚨 Leading Question: Avoid suggesting an answer.": [
-            "good", "agree", "disagree", "isn't it true", "efficient", "effective", "great", "satisfactory",
-            "satisfied", "amazing", "perfect", "enjoy", "exceptional", "beneficial", "impressive", "impressed", "love", "why do you like", "how likely",
+             "agree", "disagree", "isn't it true", "efficient", "efficiently",
+        "effective", "effectively", "great", "satisfactory", "satisfied", "amazing",
+        "perfect", "perfectly", "enjoy", "enjoyed", "exceptional", "exceptionally",
+        "beneficial", "impressively", "impressive", "impressed", "love", "loved",
+        "why do you like", "how likely", "happy", "happily", "pleased",
+        "delighted", "helpful", "helpfully", "easy", "easily", "convenient",
+        "conveniently", "excellent", "excellently", "successful", "successfully",
+        "confusing", "confusingly", "poor", "poorly", "disappointing", "disappointingly",
+        "unhelpful", "unhelpfully", "slow", "slowly", "rude", "rudely",
+        "unprofessional", "unprofessionally", "timely", "better", "worse"
         ],
         "🚨 Double-Barreled Question: Keep it focused on one topic.": [
-            "and.*or", "both", "together", "at the same time", "combined", "simultaneously"
+            "and.*or", "both", "together", "at the same time", "combined", "simultaneously", "as well as", "in addition to", "along with", "and also"
         ],
         "🚨 Forced Question: Ensure respondents have a way to opt out.": [
             "must", "required"
         ],
         "🚨 Jargon Detected: Use simple and clear language.": [
-            "CRM", "UX", "Efficacy"
+            "CRM", "UX", "Efficacy", "churn", "pain point", "stakeholder", "onboarding", "offboarding" 
         ]
     };
 
