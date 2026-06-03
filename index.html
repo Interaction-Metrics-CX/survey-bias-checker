@@ -277,9 +277,6 @@ if (answerOptions.length > 0) {
     }
 
     const classified = optionValues.map(classify);
-    document.getElementById("answerFeedback").innerHTML = 
-    optionValues.map((v,i) => v + " → " + classified[i]).join("<br>");
-document.getElementById("answerFeedback").style.display = "block";
     const posCount = classified.filter(c => c === "positive").length;
     const negCount = classified.filter(c => c === "negative").length;
     const hasNeutral = classified.includes("neutral");
