@@ -221,7 +221,7 @@ if (answerOptions.length > 0) {
     const optionValues = Array.from(answerOptions).map(o => o.value.trim().toLowerCase()).filter(Boolean);
     let answerBias = "";
 
-    // ─── CLUSTER MAP (vague / near-synonym detection) ───────────────────
+    // ─── CLUSTER MAP ─────────────────────────────────────────────────────
     const clusters = [
         ["exceeded expectations","above expectations","surpassed expectations","beyond expectations","better than expected"],
         ["met expectations","as expected","what i expected","what was expected"],
@@ -253,77 +253,31 @@ if (answerOptions.length > 0) {
         }
     }
 
-    // ─── POSITIVE / NEGATIVE / NEUTRAL CLASSIFICATION ───────────────────
-    const positiveWords = ["satisfied","pleased","happy","delighted","content","agree","support","likely","probable",
-        "helpful","effective","efficient","easy","clear","responsive","reliable","accurate",
-        "professional","friendly","smooth","seamless","valuable","fair","reasonable","timely",
-        "prompt","excellent","outstanding","exceptional","good","great","satisfied","successful",
-        "enjoy","recommend","trust","convenient","easy","impressive"];
-    const negativeWords = ["dissatisfied","displeased","unhappy","disappointed","disagree","oppose","unlikely","improbable",
+    // ─── UNBALANCED CHECK ────────────────────────────────────────────────
+    const positiveMarkers = ["satisfied","pleased","happy","delighted","agree","likely","helpful","effective",
+        "efficient","easy","clear","responsive","reliable","accurate","professional","friendly",
+        "smooth","seamless","valuable","reasonable","timely","prompt","excellent","outstanding",
+        "exceptional","good","great","successful","convenient","impressive","positive","better"];
+    const negativeMarkers = ["dissatisfied","displeased","unhappy","disappointed","disagree","unlikely",
         "unhelpful","ineffective","inefficient","difficult","unclear","unresponsive","unreliable",
         "inaccurate","unprofessional","unfriendly","frustrating","confusing","poor","bad",
-        "terrible","awful","horrible","avoid","distrust","slow","rude","unsuccessful"];
-    const neutralWords = ["neutral","neither","unsure","no opinion","not sure","undecided","no preference","mixed","average","moderate","middle"];
-    const optOutWords = ["n/a","not applicable","none","does not apply","not relevant","other","none of the above","prefer not to answer","not sure"];
+        "terrible","awful","horrible","slow","rude","negative","worse"];
+    const optOutMarkers = ["n/a","not applicable","none","other","does not apply","not relevant",
+        "none of the above","prefer not to answer","not sure"];
 
-    function classify(val) {
-        if (neutralWords.some(w => val.includes(w))) return "neutral";
-        if (optOutWords.some(w => val.includes(w))) return "optout";
-        const posScore = positiveWords.filter(w => val.includes(w)).length;
-        const negScore = negativeWords.filter(w => val.includes(w)).length;
-        if (posScore > negScore) return "positive";
-        if (negScore > posScore) return "negative";
-        return "neutral";
-    }
+    const hasOptOut = optionValues.some(v => optOutMarkers.some(w => v.includes(w)));
 
-    const classified = optionValues.map(classify);
-    const posCount = classified.filter(c => c === "positive").length;
-    const negCount = classified.filter(c => c === "negative").length;
-    const hasNeutral = classified.includes("neutral");
-    const hasOptOut = classified.includes("optout");
-
-    // ─── UNBALANCED CHECK ────────────────────────────────────────────────
-    if (!answerBias && (posCount > 0 || negCount > 0)) {
-        if (Math.abs(posCount - negCount) > 1) {
+    if (!answerBias) {
+        const posCount = optionValues.filter(v => positiveMarkers.some(w => v.includes(w))).length;
+        const negCount = optionValues.filter(v => negativeMarkers.some(w => v.includes(w))).length;
+        if ((posCount > 0 || negCount > 0) && Math.abs(posCount - negCount) > 1) {
             answerBias = "⚠️ Unbalanced Answer Choices: The number of positive and negative options should be roughly equal.";
         }
     }
 
-    // ─── NON-PARALLEL CHECK ──────────────────────────────────────────────
-    const modifierLevels = [
-        { level: 3, words: ["extremely","completely","absolutely","entirely","totally","exceptionally","incredibly"] },
-        { level: 2, words: ["very","highly","greatly"] },
-        { level: 1, words: ["somewhat","slightly","fairly","a little","a bit","moderately","kind of","sort of"] }
-    ];
-
-    function getModifierLevel(val) {
-        for (let m of modifierLevels) {
-            if (m.words.some(w => val.startsWith(w + " "))) return m.level;
-        }
-        return 0;
-    }
-
-    if (!answerBias && posCount > 0 && negCount > 0) {
-        const posLevels = optionValues.filter((_,i) => classified[i] === "positive").map(getModifierLevel).sort();
-        const negLevels = optionValues.filter((_,i) => classified[i] === "negative").map(getModifierLevel).sort();
-        const posSet = JSON.stringify(posLevels);
-        const negSet = JSON.stringify(negLevels);
-        if (posSet !== negSet) {
-            answerBias = "⚠️ Non-Parallel Scale: Positive and negative options should use matching intensity levels (e.g. 'very satisfied' needs a matching 'very dissatisfied').";
-        }
-    }
-
-    // ─── LIMITED OPTIONS / MISSING OPT-OUT ──────────────────────────────
+    // ─── MISSING OPT-OUT ─────────────────────────────────────────────────
     if (!answerBias && !hasOptOut) {
-        answerBias = "⚠️ Limited Answer Options: Include an opt-out such as 'N/A', 'Other', or 'None of the above' so respondents aren't forced into an answer that doesn't apply.";
-    }
-
-    // ─── FORCED QUESTION WITHOUT OPT-OUT ────────────────────────────────
-    const questionText = document.getElementById("surveyInput").value.toLowerCase();
-    const forcedTerms = ["must","required","have to","need to","mandatory","obligatory","compulsory"];
-    const isForcedQuestion = forcedTerms.some(t => new RegExp("\\b" + t + "\\b").test(questionText));
-    if (!answerBias && isForcedQuestion && !hasOptOut) {
-        answerBias = "⚠️ Forced Question: This question uses mandatory language but no opt-out option is provided. Add 'N/A' or 'Does not apply.'";
+        answerBias = "⚠️ Limited Answer Options: Consider adding an opt-out such as 'N/A', 'Other', or 'None of the above'.";
     }
 
     // ─── DISPLAY ─────────────────────────────────────────────────────────
