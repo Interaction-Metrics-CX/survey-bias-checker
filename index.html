@@ -184,7 +184,7 @@ function checkBias() {
         "effective", "effectively", "great", "satisfactory", "satisfied", "amazing",
         "perfect", "perfectly", "enjoy", "enjoyed", "exceptional", "exceptionally",
         "beneficial", "impressively", "impressive", "impressed", "love", "loved",
-        "why do you like", "how likely", "happy", "happily", "pleased",
+        "why do you like", "happy", "happily", "pleased",
         "delighted", "helpful", "helpfully", "easy", "easily", "convenient",
         "conveniently", "excellent", "excellently", "successful", "successfully",
         "confusing", "confusingly", "poor", "poorly", "disappointing", "disappointingly",
@@ -277,6 +277,9 @@ if (answerOptions.length > 0) {
     }
 
     const classified = optionValues.map(classify);
+    document.getElementById("answerFeedback").innerHTML = 
+    optionValues.map((v,i) => v + " → " + classified[i]).join("<br>");
+document.getElementById("answerFeedback").style.display = "block";
     const posCount = classified.filter(c => c === "positive").length;
     const negCount = classified.filter(c => c === "negative").length;
     const hasNeutral = classified.includes("neutral");
