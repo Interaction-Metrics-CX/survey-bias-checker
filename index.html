@@ -184,7 +184,7 @@ function checkBias() {
         "effective", "effectively", "great", "satisfactory", "satisfied", "amazing",
         "perfect", "perfectly", "enjoy", "enjoyed", "exceptional", "exceptionally",
         "beneficial", "impressively", "impressive", "impressed", "love", "loved",
-        "why do you like", "happy", "happily", "pleased",
+        "why do you like", "how likely", "happy", "happily", "pleased",
         "delighted", "helpful", "helpfully", "easy", "easily", "convenient",
         "conveniently", "excellent", "excellently", "successful", "successfully",
         "confusing", "confusingly", "poor", "poorly", "disappointing", "disappointingly",
@@ -216,74 +216,28 @@ function checkBias() {
 
     // 🚨 FIXED: Answer bias checks **only if there are answer choices**
     const answerOptions = document.querySelectorAll("#answerOptions input");
+    if (answerOptions.length > 0) {
+        let hasLimitedOption = true;
 
-if (answerOptions.length > 0) {
-    const optionValues = Array.from(answerOptions).map(o => o.value.trim().toLowerCase()).filter(Boolean);
-    let answerBias = "";
+        answerOptions.forEach(option => {
+            if (!answerBias && /excellent|perfect|outstanding|terrible|disastrous|horrible/i.test(option.value)) {
+                answerBias = "⚠️ Unbalanced Answer Choices: Ensure an equal number of positive and negative options.";
+            }
+            if (!answerBias && /very dissatisfied|dissatisfied|satisfied|extremely satisfied/i.test(option.value)) {
+                answerBias = "⚠️ Non-Parallel Scales: Ensure all positive and negative responses are mirrored.";
+            }
+            if (!answerBias && /good|fair|excellent/i.test(option.value)) {
+                answerBias = "⚠️ Vague Answer Choices: Use precise wording.";
+            }
+            if (/N\/A|NA|None|Not Applicable/i.test(option.value)) {
+                hasLimitedOption = false;
+            }
+        });
 
-    // ─── CLUSTER MAP ─────────────────────────────────────────────────────
-    const clusters = [
-        ["exceeded expectations","above expectations","surpassed expectations","beyond expectations","better than expected"],
-        ["met expectations","as expected","what i expected","what was expected"],
-        ["below expectations","did not meet expectations","fell short","less than expected","worse than expected"],
-        ["excellent","outstanding","exceptional","superb","fantastic","wonderful","terrific","great"],
-        ["good","fine","okay","decent","acceptable","adequate","satisfactory","alright"],
-        ["average","moderate","mixed","so-so","mediocre"],
-        ["poor","bad","lacking","subpar","below average","disappointing"],
-        ["terrible","awful","horrible","dreadful","atrocious","abysmal"],
-        ["extremely satisfied","very satisfied","completely satisfied","absolutely satisfied","totally satisfied","highly satisfied"],
-        ["somewhat satisfied","fairly satisfied","mostly satisfied","quite satisfied","generally satisfied","relatively satisfied","a little satisfied","slightly satisfied"],
-        ["somewhat dissatisfied","fairly dissatisfied","mostly dissatisfied","quite dissatisfied","generally dissatisfied","relatively dissatisfied","a little dissatisfied","slightly dissatisfied"],
-        ["extremely dissatisfied","very dissatisfied","completely dissatisfied","absolutely dissatisfied","totally dissatisfied","highly dissatisfied"],
-        ["strongly agree","completely agree","absolutely agree","totally agree","fully agree","wholeheartedly agree"],
-        ["somewhat agree","fairly agree","mostly agree","generally agree","tend to agree","slightly agree","a little agree"],
-        ["somewhat disagree","fairly disagree","mostly disagree","generally disagree","tend to disagree","slightly disagree","a little disagree"],
-        ["strongly disagree","completely disagree","absolutely disagree","totally disagree","fully disagree","wholeheartedly disagree"],
-        ["extremely likely","very likely","highly likely","almost certainly","definitely will"],
-        ["somewhat likely","fairly likely","probably","might","possibly"],
-        ["somewhat unlikely","fairly unlikely","probably not","might not"],
-        ["extremely unlikely","very unlikely","highly unlikely","almost certainly not","definitely will not","definitely won't"]
-    ];
-
-    for (let cluster of clusters) {
-        const hits = optionValues.filter(v => cluster.includes(v));
-        if (hits.length >= 2) {
-            answerBias = "⚠️ Vague Answer Choices: Two or more options are too similar for respondents to distinguish reliably.";
-            break;
+        if (hasLimitedOption && !answerBias) {
+            answerBias = "⚠️ Limited Answer Options: Ensure 'N/A, None, or Not Applicable' is included.";
         }
     }
-
-    // ─── UNBALANCED CHECK ────────────────────────────────────────────────
-    const positiveMarkers = ["satisfied","pleased","happy","delighted","agree","likely","helpful","effective",
-        "efficient","easy","clear","responsive","reliable","accurate","professional","friendly",
-        "smooth","seamless","valuable","reasonable","timely","prompt","excellent","outstanding",
-        "exceptional","good","great","successful","convenient","impressive","positive","better"];
-    const negativeMarkers = ["dissatisfied","displeased","unhappy","disappointed","disagree","unlikely",
-        "unhelpful","ineffective","inefficient","difficult","unclear","unresponsive","unreliable",
-        "inaccurate","unprofessional","unfriendly","frustrating","confusing","poor","bad",
-        "terrible","awful","horrible","slow","rude","negative","worse"];
-    const optOutMarkers = ["n/a","not applicable","none","other","does not apply","not relevant",
-        "none of the above","prefer not to answer","not sure"];
-
-    const hasOptOut = optionValues.some(v => optOutMarkers.some(w => v.includes(w)));
-
-    if (!answerBias) {
-        const posCount = optionValues.filter(v => positiveMarkers.some(w => v.includes(w))).length;
-        const negCount = optionValues.filter(v => negativeMarkers.some(w => v.includes(w))).length;
-        if ((posCount > 0 || negCount > 0) && Math.abs(posCount - negCount) > 1) {
-            answerBias = "⚠️ Unbalanced Answer Choices: The number of positive and negative options should be roughly equal.";
-        }
-    }
-
-    // ─── MISSING OPT-OUT ─────────────────────────────────────────────────
-    if (!answerBias && !hasOptOut) {
-        answerBias = "⚠️ Limited Answer Options: Consider adding an opt-out such as 'N/A', 'Other', or 'None of the above'.";
-    }
-
-    // ─── DISPLAY ─────────────────────────────────────────────────────────
-    document.getElementById("answerFeedback").innerHTML = answerBias || "✅ No bias detected in the answer choices!";
-    document.getElementById("answerFeedback").style.display = "block";
-}
 
     // ✅ FIXED: Display feedback properly
     document.querySelectorAll(".feedback").forEach(el => el.style.display = "none");
@@ -299,4 +253,3 @@ if (answerOptions.length > 0) {
 </script>    
 </body>
 </html>
-
