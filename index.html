@@ -216,28 +216,120 @@ function checkBias() {
 
     // 🚨 FIXED: Answer bias checks **only if there are answer choices**
     const answerOptions = document.querySelectorAll("#answerOptions input");
-    if (answerOptions.length > 0) {
-        let hasLimitedOption = true;
 
-        answerOptions.forEach(option => {
-            if (!answerBias && /excellent|perfect|outstanding|terrible|disastrous|horrible/i.test(option.value)) {
-                answerBias = "⚠️ Unbalanced Answer Choices: Ensure an equal number of positive and negative options.";
-            }
-            if (!answerBias && /very dissatisfied|dissatisfied|satisfied|extremely satisfied/i.test(option.value)) {
-                answerBias = "⚠️ Non-Parallel Scales: Ensure all positive and negative responses are mirrored.";
-            }
-            if (!answerBias && /good|fair|excellent/i.test(option.value)) {
-                answerBias = "⚠️ Vague Answer Choices: Use precise wording.";
-            }
-            if (/N\/A|NA|None|Not Applicable/i.test(option.value)) {
-                hasLimitedOption = false;
-            }
-        });
+if (answerOptions.length > 0) {
+    const optionValues = Array.from(answerOptions).map(o => o.value.trim().toLowerCase()).filter(Boolean);
+    let answerBias = "";
 
-        if (hasLimitedOption && !answerBias) {
-            answerBias = "⚠️ Limited Answer Options: Ensure 'N/A, None, or Not Applicable' is included.";
+    // ─── CLUSTER MAP (vague / near-synonym detection) ───────────────────
+    const clusters = [
+        ["exceeded expectations","above expectations","surpassed expectations","beyond expectations","better than expected"],
+        ["met expectations","as expected","what i expected","what was expected"],
+        ["below expectations","did not meet expectations","fell short","less than expected","worse than expected"],
+        ["excellent","outstanding","exceptional","superb","fantastic","wonderful","terrific","great"],
+        ["good","fine","okay","decent","acceptable","adequate","satisfactory","alright"],
+        ["average","moderate","mixed","so-so","mediocre"],
+        ["poor","bad","lacking","subpar","below average","disappointing"],
+        ["terrible","awful","horrible","dreadful","atrocious","abysmal"],
+        ["extremely satisfied","very satisfied","completely satisfied","absolutely satisfied","totally satisfied","highly satisfied"],
+        ["somewhat satisfied","fairly satisfied","mostly satisfied","quite satisfied","generally satisfied","relatively satisfied","a little satisfied","slightly satisfied"],
+        ["somewhat dissatisfied","fairly dissatisfied","mostly dissatisfied","quite dissatisfied","generally dissatisfied","relatively dissatisfied","a little dissatisfied","slightly dissatisfied"],
+        ["extremely dissatisfied","very dissatisfied","completely dissatisfied","absolutely dissatisfied","totally dissatisfied","highly dissatisfied"],
+        ["strongly agree","completely agree","absolutely agree","totally agree","fully agree","wholeheartedly agree"],
+        ["somewhat agree","fairly agree","mostly agree","generally agree","tend to agree","slightly agree","a little agree"],
+        ["somewhat disagree","fairly disagree","mostly disagree","generally disagree","tend to disagree","slightly disagree","a little disagree"],
+        ["strongly disagree","completely disagree","absolutely disagree","totally disagree","fully disagree","wholeheartedly disagree"],
+        ["extremely likely","very likely","highly likely","almost certainly","definitely will"],
+        ["somewhat likely","fairly likely","probably","might","possibly"],
+        ["somewhat unlikely","fairly unlikely","probably not","might not"],
+        ["extremely unlikely","very unlikely","highly unlikely","almost certainly not","definitely will not","definitely won't"]
+    ];
+
+    for (let cluster of clusters) {
+        const hits = optionValues.filter(v => cluster.includes(v));
+        if (hits.length >= 2) {
+            answerBias = "⚠️ Vague Answer Choices: Two or more options are too similar for respondents to distinguish reliably.";
+            break;
         }
     }
+
+    // ─── POSITIVE / NEGATIVE / NEUTRAL CLASSIFICATION ───────────────────
+    const positiveWords = ["satisfied","pleased","happy","delighted","content","agree","support","likely","probable",
+        "helpful","effective","efficient","easy","clear","responsive","reliable","accurate",
+        "professional","friendly","smooth","seamless","valuable","fair","reasonable","timely",
+        "prompt","excellent","outstanding","exceptional","good","great","satisfied","successful",
+        "enjoy","recommend","trust","convenient","easy","impressive"];
+    const negativeWords = ["dissatisfied","displeased","unhappy","disappointed","disagree","oppose","unlikely","improbable",
+        "unhelpful","ineffective","inefficient","difficult","unclear","unresponsive","unreliable",
+        "inaccurate","unprofessional","unfriendly","frustrating","confusing","poor","bad",
+        "terrible","awful","horrible","avoid","distrust","slow","rude","unsuccessful"];
+    const neutralWords = ["neutral","neither","unsure","no opinion","not sure","undecided","no preference","mixed","average","moderate","middle"];
+    const optOutWords = ["n/a","not applicable","none","does not apply","not relevant","other","none of the above","prefer not to answer","not sure"];
+
+    function classify(val) {
+        if (neutralWords.some(w => val.includes(w))) return "neutral";
+        if (optOutWords.some(w => val.includes(w))) return "optout";
+        const posScore = positiveWords.filter(w => val.includes(w)).length;
+        const negScore = negativeWords.filter(w => val.includes(w)).length;
+        if (posScore > negScore) return "positive";
+        if (negScore > posScore) return "negative";
+        return "neutral";
+    }
+
+    const classified = optionValues.map(classify);
+    const posCount = classified.filter(c => c === "positive").length;
+    const negCount = classified.filter(c => c === "negative").length;
+    const hasNeutral = classified.includes("neutral");
+    const hasOptOut = classified.includes("optout");
+
+    // ─── UNBALANCED CHECK ────────────────────────────────────────────────
+    if (!answerBias && (posCount > 0 || negCount > 0)) {
+        if (Math.abs(posCount - negCount) > 1) {
+            answerBias = "⚠️ Unbalanced Answer Choices: The number of positive and negative options should be roughly equal.";
+        }
+    }
+
+    // ─── NON-PARALLEL CHECK ──────────────────────────────────────────────
+    const modifierLevels = [
+        { level: 3, words: ["extremely","completely","absolutely","entirely","totally","exceptionally","incredibly"] },
+        { level: 2, words: ["very","highly","greatly"] },
+        { level: 1, words: ["somewhat","slightly","fairly","a little","a bit","moderately","kind of","sort of"] }
+    ];
+
+    function getModifierLevel(val) {
+        for (let m of modifierLevels) {
+            if (m.words.some(w => val.startsWith(w + " "))) return m.level;
+        }
+        return 0;
+    }
+
+    if (!answerBias && posCount > 0 && negCount > 0) {
+        const posLevels = optionValues.filter((_,i) => classified[i] === "positive").map(getModifierLevel).sort();
+        const negLevels = optionValues.filter((_,i) => classified[i] === "negative").map(getModifierLevel).sort();
+        const posSet = JSON.stringify(posLevels);
+        const negSet = JSON.stringify(negLevels);
+        if (posSet !== negSet) {
+            answerBias = "⚠️ Non-Parallel Scale: Positive and negative options should use matching intensity levels (e.g. 'very satisfied' needs a matching 'very dissatisfied').";
+        }
+    }
+
+    // ─── LIMITED OPTIONS / MISSING OPT-OUT ──────────────────────────────
+    if (!answerBias && !hasOptOut) {
+        answerBias = "⚠️ Limited Answer Options: Include an opt-out such as 'N/A', 'Other', or 'None of the above' so respondents aren't forced into an answer that doesn't apply.";
+    }
+
+    // ─── FORCED QUESTION WITHOUT OPT-OUT ────────────────────────────────
+    const questionText = document.getElementById("surveyInput").value.toLowerCase();
+    const forcedTerms = ["must","required","have to","need to","mandatory","obligatory","compulsory"];
+    const isForcedQuestion = forcedTerms.some(t => new RegExp("\\b" + t + "\\b").test(questionText));
+    if (!answerBias && isForcedQuestion && !hasOptOut) {
+        answerBias = "⚠️ Forced Question: This question uses mandatory language but no opt-out option is provided. Add 'N/A' or 'Does not apply.'";
+    }
+
+    // ─── DISPLAY ─────────────────────────────────────────────────────────
+    document.getElementById("answerFeedback").innerHTML = answerBias || "✅ No bias detected in the answer choices!";
+    document.getElementById("answerFeedback").style.display = "block";
+}
 
     // ✅ FIXED: Display feedback properly
     document.querySelectorAll(".feedback").forEach(el => el.style.display = "none");
